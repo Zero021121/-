@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>???</title>
+  <style>
+    :root{--bg:#000000;--card:#000000;--accent:#9cc2ff}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: radial-gradient(circle at 10% 10%, rgba(156,194,255,0.06), transparent 10%), var(--bg); color:#e6eef9}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
+    .card{width:100%;max-width:760px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0 0 8px;font-size:1.6rem}
+    p.lead{margin:0 0 18px;color:rgba(230,238,249,0.8)}
+    .input-row{display:flex;gap:10px;margin-bottom:12px}
+    input[type=text]{flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:inherit;font-size:1rem}
+    button{padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:#000000;font-weight:600;cursor:pointer}
+    .secret{margin-top:18px;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));color:#dbe9ff}
+    .hint{font-size:0.85rem;color:rgba(230,238,249,0.7);margin-top:8px}
+    .small{font-size:0.9rem;color:rgba(230,238,249,0.85)}
+    .footer{margin-top:14px;font-size:0.85rem;color:rgba(230,238,249,0.6)}
+    .lock{display:inline-block;margin-right:8px}
+    .reveal{white-space:pre-wrap;font-size:1.05rem;line-height:1.45}
+    .top-right{position:fixed;right:14px;top:14px;font-size:0.85rem;color:rgba(230,238,249,0.6)}
+
+    canvas#fireworks {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="main">
+      <h1>???</h1>
+      
+
+      <div id="lockedArea">
+        <div class="input-row">
+          <input id="secretInput" type="text" placeholder="Enter secret code (or paste token)" autocomplete="off" />
+          <button id="unlockBtn">Open</button>
+        </div>
+        <div class="hint">The initial of a person you loved the most</div>
+      </div>
+
+      <div id="secretCard" class="secret" style="display:none">
+        <div class="small"></div>
+        <div id="messageArea" class="reveal"></div>
+        <div class="footer"> <code></code> </div>
+      </div>
+
+    </div>
+  </div>
+
+  <canvas id="fireworks"></canvas>
+
+  <script>
+
+    const SECRET_TOKEN = 'C'
+
+    const SECRET_MESSAGE = `Thank you for today my love.. G'night`;
+
+    const decodeTokenFromUrl = () => {
+      try {
+        const q = new URLSearchParams(window.location.search).get('t');
+        if (q) return decodeURIComponent(q);
+        const h = location.hash.replace(/^#/, '');
+        if (h.startsWith('t=')) return decodeURIComponent(h.slice(2));
+        return null;
+      } catch(e){return null}
+    }
+
+    const unlock = () => {
+      const user = document.getElementById('secretInput').value.trim();
+      if (!user) return showError('Please type the secret.');
+      if (user === SECRET_TOKEN) return showMessage();
+      return showError('Wrong secret — try again.');
+    }
+
+    const showError = (text) => {
+      const input = document.getElementById('secretInput');
+      input.value = '';
+      input.placeholder = text;
+      input.focus();
+    }
+
+    const showMessage = () => {
+      document.getElementById('lockedArea').style.display = 'none';
+      const card = document.getElementById('secretCard');
+      const area = document.getElementById('messageArea');
+      area.textContent = SECRET_MESSAGE;
+      card.style.display = 'block';
+      // Tambahkan jeda 10 detik sebelum mulai fireworks
+      setTimeout(startFireworks, 10000);
+    }
+
+    document.getElementById('unlockBtn').addEventListener('click', unlock);
+    document.getElementById('secretInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') unlock();});
+
+    const tokenFromUrl = decodeTokenFromUrl();
+    if (tokenFromUrl){
+      setTimeout(()=>{
+        if (tokenFromUrl === SECRET_TOKEN) showMessage();
+        else {
+          document.getElementById('secretInput').value = tokenFromUrl;
+        }
+      }, 150);
+    }
+
+    /* Fireworks Animation */
+    function startFireworks(){
+      const canvas = document.getElementById('fireworks');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      let w, h;
+      function resize(){
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function createFirework(){
+        const x = Math.random() * w;
+        const y = Math.random() * h/2;
+        const count = 100;
+        for (let i=0; i<count; i++){
+          const angle = (Math.PI*2) * (i/count);
+          const speed = Math.random()*5+2;
+          particles.push({
+            x:x,
+            y:y,
+            vx:Math.cos(angle)*speed,
+            vy:Math.sin(angle)*speed,
+            life:100,
+            color:`hsl(${Math.random()*360},100%,60%)`
+          });
+        }
+      }
+
+      function animate(){
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(0,0,w,h);
+        particles.forEach((p,i)=>{
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.05;
+          p.life--;
+          if (p.life<=0) particles.splice(i,1);
+          else {
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x,p.y,2,2);
+          }
+        });
+        requestAnimationFrame(animate);
+      }
+      setInterval(createFirework, 1000);
+      animate();
+    }
+  </script>
+</body>
+</html>
